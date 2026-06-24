@@ -119,6 +119,14 @@
   padding: 20px 6vw 60px;
 }
 
+.hero-tilt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
 .hero-brand-logo {
   width: 64px;
   height: 64px;

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useTransform } from "framer-motion";
 import "./AppLaunch.css";
 import { getConfig, updateConfig } from "./config";
 import { getAppLaunches } from "./analytics";
+import { useTilt } from "./useTilt";
 import appIcon from "./assets/outletAi.png";
 
 function recordLaunch() {
@@ -55,6 +56,14 @@ export default function AppLaunch() {
   const [status, setStatus] = useState("idle"); // idle, confirming, sending, signaled, error
   const [errorMessage, setErrorMessage] = useState("");
   const [signaledAt, setSignaledAt] = useState(null);
+
+  const { x: tiltX, y: tiltY } = useTilt();
+  const glowX = useTransform(tiltX, [-1, 1], [-40, 40]);
+  const glowY = useTransform(tiltY, [-1, 1], [-40, 40]);
+  const starsX = useTransform(tiltX, [-1, 1], [15, -15]);
+  const starsY = useTransform(tiltY, [-1, 1], [15, -15]);
+  const heroRotateY = useTransform(tiltX, [-1, 1], [-6, 6]);
+  const heroRotateX = useTransform(tiltY, [-1, 1], [6, -6]);
 
   useEffect(() => {
     getConfig().then((loaded) => {
@@ -121,8 +130,8 @@ export default function AppLaunch() {
 
   return (
     <div className="launch-page">
-      <div className="launch-glow" />
-      <div className="launch-stars" />
+      <motion.div className="launch-glow" style={{ x: glowX, y: glowY }} />
+      <motion.div className="launch-stars" style={{ x: starsX, y: starsY }} />
 
       <header className="launch-topbar">
         <div className="topbar-status">
@@ -132,7 +141,8 @@ export default function AppLaunch() {
         <Clock />
       </header>
 
-      <main className="launch-hero">
+      <main className="launch-hero" style={{ perspective: 1000 }}>
+        <motion.div style={{ rotateX: heroRotateX, rotateY: heroRotateY }} className="hero-tilt">
         <motion.img
           src={appIcon}
           alt=""
@@ -218,6 +228,7 @@ export default function AppLaunch() {
               </button>
             </div>
           )}
+        </motion.div>
         </motion.div>
       </main>
 
