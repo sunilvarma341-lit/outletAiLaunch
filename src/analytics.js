@@ -21,29 +21,11 @@ export function getAppLaunches() {
  */
 export function getLaunchStats() {
   const launches = getAppLaunches();
-  
+
   const stats = {
     total: launches.length,
-    manual: launches.filter(l => l.source === 'manual').length,
-    auto: launches.filter(l => l.source === 'auto').length,
-    directLink: launches.filter(l => l.source === 'direct-link').length,
-    byDate: {},
-    averageCountdown: 0
+    lastLaunch: launches.length > 0 ? launches[launches.length - 1].timestamp : null,
   };
-
-  // Group by date
-  launches.forEach(launch => {
-    const date = new Date(launch.timestamp).toLocaleDateString();
-    stats.byDate[date] = (stats.byDate[date] || 0) + 1;
-  });
-
-  // Calculate average countdown when manual clicks occurred
-  const manualLaunches = launches.filter(l => l.source === 'manual' && l.countdown);
-  if (manualLaunches.length > 0) {
-    stats.averageCountdown = (
-      manualLaunches.reduce((sum, l) => sum + l.countdown, 0) / manualLaunches.length
-    ).toFixed(2);
-  }
 
   return stats;
 }
@@ -56,13 +38,12 @@ export function exportToCSV() {
   const launches = getAppLaunches();
   if (launches.length === 0) return "No data available";
 
-  const headers = ["Source", "Timestamp", "Countdown Remaining", "Date", "Time"];
+  const headers = ["Source", "Timestamp", "Date", "Time"];
   const rows = launches.map(launch => {
     const date = new Date(launch.timestamp);
     return [
       launch.source,
       launch.timestamp,
-      launch.countdown || "N/A",
       date.toLocaleDateString(),
       date.toLocaleTimeString()
     ];

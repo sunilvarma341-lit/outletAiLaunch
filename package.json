@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "firebase": "^12.15.0",
+    "framer-motion": "^12.41.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-qr-code": "^2.2.0",
     "react-router-dom": "^7.18.0"
   },
   "devDependencies": {

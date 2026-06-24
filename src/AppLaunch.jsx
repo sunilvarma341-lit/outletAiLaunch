@@ -1,202 +1,252 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import QRCode from "react-qr-code";
+import { motion } from "framer-motion";
 import "./AppLaunch.css";
-import "./analytics.js"; // Load analytics utilities
-import { getConfig } from "./config";
-import appIcon from "./assets/outletAi.png"; // Use existing app icon asset
+import { getConfig, updateConfig } from "./config";
+import { getAppLaunches } from "./analytics";
+import appIcon from "./assets/outletAi.png";
+
+function recordLaunch() {
+  const launches = getAppLaunches();
+  launches.push({ source: "go-live", timestamp: new Date().toISOString() });
+  localStorage.setItem("appLaunches", JSON.stringify(launches));
+}
+
+const CONFETTI = Array.from({ length: 14 }, (_, i) => ({
+  angle: (360 / 14) * i,
+  delay: Math.random() * 0.15,
+}));
+
+function Confetti() {
+  return (
+    <div className="confetti-burst">
+      {CONFETTI.map((c, i) => (
+        <motion.span
+          key={i}
+          className="confetti-dot"
+          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+          animate={{
+            x: Math.cos((c.angle * Math.PI) / 180) * 90,
+            y: Math.sin((c.angle * Math.PI) / 180) * 90,
+            opacity: 0,
+            scale: 0.4,
+          }}
+          transition={{ duration: 0.7, delay: c.delay, ease: "easeOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Clock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <span className="topbar-clock">
+      {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+    </span>
+  );
+}
 
 export default function AppLaunch() {
-  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
-  const [countdown, setCountdown] = useState(0);
-  const [timeUntilStart, setTimeUntilStart] = useState(0);
-  const [clicked, setClicked] = useState(false);
-  const [goPressed, setGoPressed] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [status, setStatus] = useState("idle"); // idle, confirming, sending, signaled, error
+  const [errorMessage, setErrorMessage] = useState("");
+  const [signaledAt, setSignaledAt] = useState(null);
 
   useEffect(() => {
-    async function loadConfig() {
-      const loaded = await getConfig();
+    getConfig().then((loaded) => {
       setConfig(loaded);
-
-      const now = new Date();
-      const start = new Date(loaded.launchStartTime);
-      const diff = Math.max(0, Math.ceil((start.getTime() - now.getTime()) / 1000));
-
-      setTimeUntilStart(diff);
-      setCountdown(loaded.countdownDuration);
-      setIsReady(true);
-    }
-
-    loadConfig();
+      if (loaded.lastSignaledAt) {
+        setSignaledAt(loaded.lastSignaledAt);
+        setStatus("signaled");
+      }
+    });
   }, []);
 
-  useEffect(() => {
-    if (!isReady || !config) return;
-
-    let intervalId;
-
-    if (timeUntilStart > 0) {
-      intervalId = setInterval(() => {
-        setTimeUntilStart((prev) => {
-          if (prev <= 1) {
-            clearInterval(intervalId);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (timeUntilStart === 0 && countdown > 0) {
-      intervalId = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(intervalId);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => clearInterval(intervalId);
-  }, [isReady, config, timeUntilStart, countdown]);
-
-  const handleGoPress = () => {
-    if (!config) return;
-
-    setClicked(true);
-    setGoPressed(true);
-
-    const launches = JSON.parse(localStorage.getItem("appLaunches") || "[]");
-    launches.push({
-      source: "go-pressed",
-      timestamp: new Date().toISOString(),
-      countdown,
-    });
-    localStorage.setItem("appLaunches", JSON.stringify(launches));
+  const handleGoLiveClick = () => {
+    if (status !== "idle") return;
+    setStatus("confirming");
   };
 
-  if (!isReady || !config) {
+  const handleCancel = () => setStatus("idle");
+
+  const handleConfirm = async () => {
+    setStatus("sending");
+    setErrorMessage("");
+
+    if (!config.backendUrl) {
+      setErrorMessage("Backend URL is not configured. Set it in /config before launching.");
+      setStatus("error");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${config.backendUrl}/api/go-live`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-go-live-token": config.goLiveToken || "",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to publish release.");
+      }
+      const sentAt = data.receivedAt || new Date().toISOString();
+      recordLaunch();
+      await updateConfig({ lastSignaledAt: sentAt });
+      setSignaledAt(sentAt);
+      setStatus("signaled");
+    } catch (err) {
+      setErrorMessage(err.message || "Something went wrong while publishing.");
+      setStatus("error");
+    }
+  };
+
+  const handleRetry = () => {
+    setErrorMessage("");
+    setStatus("idle");
+  };
+
+  if (!config) {
     return (
-      <div className="launch-container">
-        <div className="launch-card">
-          <p className="launching-text">Loading configuration...</p>
-        </div>
+      <div className="launch-page">
+        <div className="loader" />
       </div>
     );
   }
 
-  const formatDuration = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    const padded = (value) => String(value).padStart(2, "0");
-    return `${padded(hrs)}:${padded(mins)}:${padded(secs)}`;
-  };
-
-  const startMessage = timeUntilStart > 0
-    ? `Starts in ${formatDuration(timeUntilStart)}`
-    : countdown > 0
-      ? `Timer remaining: ${formatDuration(countdown)}`
-      : "Time completed. Press Go to continue.";
-
   return (
-    <div className="launch-container">
-      {/* <button
-        className="admin-access-btn"
-        onClick={() => navigate("/config")}
-        title="Configuration & Analytics"
-      >
-        ⚙️
-      </button> */}
+    <div className="launch-page">
+      <div className="launch-glow" />
+      <div className="launch-stars" />
 
-      <div className="launch-card">
-        <div className="logo-container">
-          <div className="logo-placeholder">
-            <img src={appIcon} alt="App Icon" className="app-icon" />
-          </div>
+      <header className="launch-topbar">
+        <div className="topbar-status">
+          <span className={`topbar-dot ${status === "signaled" ? "live" : ""}`} />
+          {status === "signaled" ? "Live" : "Standby"}
         </div>
+        <Clock />
+      </header>
 
-        <h1 className="app-title">{config.appName}</h1>
-        <p className="app-subtitle">{config.appSubtitle}</p>
+      <main className="launch-hero">
+        <motion.img
+          src={appIcon}
+          alt=""
+          className="hero-brand-logo"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        />
+        <motion.h1
+          className="hero-brand-name"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+        >
+          {config.appName}
+        </motion.h1>
+        <motion.p
+          className="hero-brand-subtitle"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          {config.appSubtitle}
+        </motion.p>
 
-        <div className="countdown-section">
-          <p className="launching-text">
-            {countdown > 0
-              ? `Timer remaining: ${countdown}s`
-              : !goPressed
-                ? "Time completed. Press Go to continue."
-                : ""}
-          </p>
-          {countdown > 0 && (
-            <div className="countdown-circle">
-              <svg className="countdown-ring" viewBox="0 0 120 120">
-                <circle
-                  className="countdown-ring-background"
-                  cx="60"
-                  cy="60"
-                  r="54"
-                />
-                <circle
-                  className="countdown-ring-progress"
-                  cx="60"
-                  cy="60"
-                  r="54"
-                  style={{
-                    strokeDashoffset: `${(countdown / config.countdownDuration) * 339.292}`,
-                  }}
-                />
-              </svg>
-              <span className="countdown-number">{countdown}</span>
+        <motion.div
+          className="hero-action"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.18 }}
+        >
+          {(status === "idle" || status === "confirming") && (
+            <>
+              <p className="launch-lead">
+                The production build is staged and ready on Google Play.
+              </p>
+              <motion.button
+                className="go-live-button"
+                onClick={handleGoLiveClick}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                Go Live
+              </motion.button>
+            </>
+          )}
+
+          {status === "sending" && (
+            <div className="status-block">
+              <div className="spinner" />
+              <p className="status-text">Publishing release to Google Play&hellip;</p>
             </div>
           )}
-        </div>
-    
-        {!goPressed && (
-          <button
-            className={`launch-button ${clicked ? "clicked" : ""}`}
-            onClick={handleGoPress}
-            disabled={timeUntilStart > 0 || countdown > 0 || clicked}
-          >
-            {timeUntilStart > 0
-              ? `Starts in ${formatDuration(timeUntilStart)}`
-              : countdown > 0
-                ? `Go in ${formatDuration(countdown)}`
-                : "Go"}
-          </button>
-        )}
 
-        {goPressed && (
-          <div className="qr-section">
-            <p className="qr-text">Scan the code or open the app link below</p>
-            <div className="qr-code-container">
-              <QRCode
-                value={config.playStoreUrl}
-                size={160}
-                level="M"
-                bgColor="#ffffff"
-                fgColor="#000000"
-              />
+          {status === "signaled" && (
+            <div className="status-block status-success">
+              <div className="success-mark-wrapper">
+                <Confetti />
+                <motion.div
+                  className="success-mark"
+                  initial={{ scale: 0.4, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </motion.div>
+              </div>
+              <h2>App is live</h2>
+              <p className="status-text">
+                Published {signaledAt ? new Date(signaledAt).toLocaleString() : ""}
+              </p>
             </div>
-            <p className="store-text">Play Store link:</p>
-            <a
-              href={config.playStoreUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="direct-link"
-            >
-              Open Play Store
-            </a>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* {process.env.NODE_ENV === "development" && (
-        <div className="debug-info">
-          <p>Debug: Check console and localStorage for tracking data</p>
+          {status === "error" && (
+            <div className="status-block status-error">
+              <h2>Launch failed</h2>
+              <p className="status-text">{errorMessage}</p>
+              <button className="retry-button" onClick={handleRetry}>
+                Try again
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </main>
+
+      <footer className="launch-footer">Lohiya Intelligent Technologies</footer>
+
+      {status === "confirming" && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <motion.div
+            className="modal-card"
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            <h2>Confirm production launch</h2>
+            <p>
+              This will publish <strong>{config.appName}</strong> to all users on the
+              Google Play Store. This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={handleCancel}>
+                Cancel
+              </button>
+              <button className="modal-confirm" onClick={handleConfirm}>
+                Confirm &amp; Launch
+              </button>
+            </div>
+          </motion.div>
         </div>
-      )} */}
+      )}
     </div>
   );
 }

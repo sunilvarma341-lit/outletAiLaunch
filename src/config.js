@@ -19,27 +19,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const CONFIG_DOC = doc(db, "appConfig", "default");
 
-function formatAsLocalDatetime(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return new Date().toISOString().slice(0, 16);
-  }
-  const tzOffset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - tzOffset * 60000);
-  return local.toISOString().slice(0, 16);
-}
-
 // Default configuration
 const DEFAULT_CONFIG = {
-  countdownDuration: 5, // seconds
-  launchStartTime: formatAsLocalDatetime(new Date(Date.now() + 30000)), // start in 30 seconds by default
-  appName: "KiranaGoLive",
-  appSubtitle: "Your Digital Store Assistant",
+  appName: "Outlet AI",
+  appSubtitle: "Your store's billing, stock, and accounts in one app.",
   playStoreUrl: "https://play.google.com/store/apps/details?id=ai.perplexity.app.android&pcampaignid=web_share",
-  deepLinkUrl: "kiranagolive://home",
-  showQRCode: true,
-  deepLinkDelay: 1500, // ms before fallback to Play Store
-  theme: "purple", // purple, green, blue
+  backendUrl: "",
+  goLiveToken: "",
+  lastSignaledAt: null,
   lastUpdated: new Date().toISOString(),
 };
 
@@ -59,18 +46,11 @@ export async function getConfig() {
     }
   }
 
-  if (config.launchStartTime) {
-    config.launchStartTime = formatAsLocalDatetime(config.launchStartTime);
-  }
-
   try {
     const snapshot = await getDoc(CONFIG_DOC);
     if (snapshot.exists()) {
       const apiConfig = snapshot.data();
       config = { ...DEFAULT_CONFIG, ...config, ...apiConfig };
-      if (config.launchStartTime) {
-        config.launchStartTime = formatAsLocalDatetime(config.launchStartTime);
-      }
       localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
     }
   } catch (e) {
