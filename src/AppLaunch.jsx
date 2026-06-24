@@ -4,7 +4,7 @@ import QRCode from "react-qr-code";
 import "./AppLaunch.css";
 import "./analytics.js"; // Load analytics utilities
 import { getConfig } from "./config";
-import appIcon from "./assets/app-icon.png"; // Import the app icon
+import appIcon from "./assets/outletAi.png"; // Use existing app icon asset
 
 export default function AppLaunch() {
   const navigate = useNavigate();
