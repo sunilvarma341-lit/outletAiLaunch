@@ -4,6 +4,7 @@ import QRCode from "react-qr-code";
 import "./AppLaunch.css";
 import "./analytics.js"; // Load analytics utilities
 import { getConfig } from "./config";
+import appIcon from "./assets/app-icon.png"; // Import the app icon
 
 export default function AppLaunch() {
   const navigate = useNavigate();
@@ -113,23 +114,7 @@ export default function AppLaunch() {
       <div className="launch-card">
         <div className="logo-container">
           <div className="logo-placeholder">
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 80 80"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="80" height="80" rx="16" fill="#4CAF50" />
-              <path
-                d="M40 20L50 35H30L40 20Z"
-                fill="white"
-                stroke="white"
-                strokeWidth="2"
-              />
-              <rect x="25" y="35" width="30" height="25" rx="2" fill="white" />
-              <path d="M30 45H50M30 50H50" stroke="#4CAF50" strokeWidth="2" />
-            </svg>
+            <img src={appIcon} alt="App Icon" className="app-icon" />
           </div>
         </div>
 
