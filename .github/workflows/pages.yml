@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     name: Build and deploy site
     runs-on: ubuntu-latest
     permissions:
@@ -32,7 +32,13 @@ jobs:
       - name: Build production site
         run: npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v1
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v1
         with:
           path: dist
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
