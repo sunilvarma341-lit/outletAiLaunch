@@ -35,7 +35,7 @@ export default function ConfigPanel() {
   };
 
   const handleReset = async () => {
-    if (confirm("Reset all settings to defaults? This also clears the backend URL and token.")) {
+    if (confirm("Reset all settings to defaults?")) {
       const defaultConfig = await resetConfig();
       setConfig(defaultConfig);
       setSaved(true);
@@ -135,40 +135,10 @@ export default function ConfigPanel() {
             </section>
 
             <section className="config-section">
-              <h2>Backend Connection</h2>
-              <div className="config-grid">
-                <div className="config-field full-width">
-                  <label>Backend URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://your-tunnel-url.ngrok-free.app"
-                    value={config.backendUrl}
-                    onChange={(e) => handleConfigChange("backendUrl", e.target.value)}
-                  />
-                  <span className="field-hint">
-                    Public URL of the local go-live backend (e.g. the current ngrok URL)
-                  </span>
-                </div>
-
-                <div className="config-field full-width">
-                  <label>Go-Live Token</label>
-                  <input
-                    type="password"
-                    value={config.goLiveToken}
-                    onChange={(e) => handleConfigChange("goLiveToken", e.target.value)}
-                  />
-                  <span className="field-hint">
-                    Must match GO_LIVE_TOKEN in the backend's .env
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            <section className="config-section">
               <h2>Launch Status</h2>
               <p className="field-hint">
                 {config.lastSignaledAt
-                  ? `Currently showing "Live" since ${new Date(config.lastSignaledAt).toLocaleString()}.`
+                  ? `Currently showing "Live" since ${new Date(config.lastSignaledAt).toLocaleString()}. The go-live signal is written straight to Firestore — check here, then publish the change in Play Console.`
                   : "Currently showing \"Go Live\" (not yet launched)."}
               </p>
               <button className="btn-outline" onClick={handleResetLaunchStatus}>

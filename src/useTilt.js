@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useMotionValue, useSpring } from "framer-motion";
 
-const SPRING = { stiffness: 60, damping: 18, mass: 0.6 };
+const SPRING = { stiffness: 90, damping: 14, mass: 0.5 };
 
 /**
  * Tracks mouse position (desktop) and device orientation (mobile gyro) and

@@ -24,8 +24,6 @@ const DEFAULT_CONFIG = {
   appName: "Outlet AI",
   appSubtitle: "Your store's billing, stock, and accounts in one app.",
   playStoreUrl: "https://play.google.com/store/apps/details?id=ai.perplexity.app.android&pcampaignid=web_share",
-  backendUrl: "",
-  goLiveToken: "",
   lastSignaledAt: null,
   lastUpdated: new Date().toISOString(),
 };

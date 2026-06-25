@@ -127,12 +127,30 @@
   will-change: transform;
 }
 
+.hero-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
 .hero-brand-logo {
   width: 64px;
   height: 64px;
   object-fit: contain;
   border-radius: 14px;
-  margin-bottom: 20px;
+}
+
+.hero-brand-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.hero-lit-logo {
+  height: 76px;
+  width: auto;
+  object-fit: contain;
 }
 
 .hero-brand-name {
@@ -161,6 +179,13 @@
   font-size: 14px;
   color: var(--ink-dim);
   margin: 0 0 28px;
+}
+
+.launch-hint {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  opacity: 0.75;
+  margin: 14px 0 0;
 }
 
 .go-live-button {
@@ -204,6 +229,12 @@
   margin: 0;
 }
 
+.status-timestamp {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
 .spinner {
   width: 28px;
   height: 28px;
@@ -224,24 +255,88 @@
   justify-content: center;
 }
 
-.confetti-burst {
+.success-ripple {
   position: absolute;
-  inset: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(78, 226, 154, 0.5);
   pointer-events: none;
 }
 
-.confetti-dot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 2px;
-  background: var(--orange-light);
+/* Sending steps */
+.sending-steps {
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 240px;
 }
 
-.confetti-dot:nth-child(3n) { background: #4ee29a; }
-.confetti-dot:nth-child(4n) { background: #ffffff; }
+.sending-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-indicator {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4ee29a;
+}
+
+.step-indicator svg {
+  width: 16px;
+  height: 16px;
+}
+
+.step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.step-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.sending-step .step-label {
+  font-size: 13.5px;
+  color: var(--ink-dim);
+}
+
+.sending-step.done .step-label,
+.sending-step.active .step-label {
+  color: var(--ink);
+}
+
+/* Shimmer on the confirmed heading */
+.shimmer-text {
+  background: linear-gradient(
+    100deg,
+    #fff 35%,
+    var(--orange-light) 50%,
+    #fff 65%
+  );
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-sweep 1.6s ease-out 0.3s 1;
+}
+
+@keyframes shimmer-sweep {
+  to { background-position: 0% 0; }
+}
 
 .success-mark {
   width: 56px;
@@ -283,82 +378,24 @@
 .launch-footer {
   position: relative;
   z-index: 1;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 0 6vw 28px;
   font-size: 12px;
   color: var(--ink-dim);
   opacity: 0.7;
 }
 
-/* Confirm modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(6, 11, 26, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 10;
+.footer-logo {
+  height: 18px;
+  width: auto;
+  display: block;
 }
 
-.modal-card {
-  background: #fff;
-  border-radius: 16px;
-  max-width: 380px;
-  width: 100%;
-  padding: 28px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
-}
-
-.modal-card h2 {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 10px;
-  color: #14171f;
-}
-
-.modal-card p {
-  font-size: 13.5px;
-  color: #4b5563;
-  line-height: 1.5;
-  margin: 0 0 22px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.modal-cancel,
-.modal-confirm {
-  flex: 1;
-  padding: 11px 16px;
-  border-radius: 100px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-}
-
-.modal-cancel {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.modal-cancel:hover {
-  background: #e9eaed;
-}
-
-.modal-confirm {
-  background: var(--orange);
-  color: #1a1206;
-}
-
-.modal-confirm:hover {
-  background: var(--orange-light);
+.launch-cancel {
+  margin-top: 6px;
 }
 
 /* Responsive */
